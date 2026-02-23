@@ -1,0 +1,72 @@
+// Is script ko apne original index.html ke last mein </body> se pehle dalo
+<script>
+    let BACKEND_URL = "";
+    let currentFile = null;
+
+    // --- NEW: Dynamic Connection Logic ---
+    async function initBackend() {
+        const badge = document.querySelector('.developer-badge');
+        try {
+            const r = await fetch(`https://raw.githubusercontent.com/meonfire07-source/amiit-compressor/main/backend-config.json?t=${Date.now()}`);
+            const d = await r.json();
+            BACKEND_URL = d.url;
+            badge.innerText = "⚡ Beast Panel: Online ✅";
+            badge.style.background = "linear-gradient(135deg, #06d6a0, #05a87d)";
+        } catch (e) { 
+            badge.innerText = "⚠️ Connecting to Panel..."; 
+            setTimeout(initBackend, 5000); 
+        }
+    }
+
+    // --- Updated handleFile from your original code ---
+    function handleFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+        currentFile = file;
+        // Your original preview logic...
+    }
+
+    // --- Updated compressImage to use BACKEND_URL ---
+    async function compressImage() {
+        if (!currentFile || !BACKEND_URL) return alert("Wait for connection!");
+        // Your processing popup logic...
+        
+        const fd = new FormData();
+        fd.append('image', currentFile);
+        fd.append('targetSize', document.getElementById('targetSize').value);
+        fd.append('sizeUnit', document.getElementById('sizeUnit').value);
+        fd.append('width', document.getElementById('width').value);
+        fd.append('height', document.getElementById('height').value);
+        fd.append('dpi', document.getElementById('dpiSlider').value);
+        fd.append('format', 'webp'); // WebP by default for Beast mode
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/compress`, { method: 'POST', body: fd });
+            const data = await res.json();
+            if(data.success) {
+                // Your original success/download logic
+                document.getElementById('compressedImg').src = data.image;
+                document.getElementById('compressedImg').style.display = 'block';
+            }
+        } catch(e) { alert("Connection lost!"); initBackend(); }
+    }
+
+    // --- Updated convertImage for JPG Button ---
+    async function convertImage() {
+        if (!currentFile || !BACKEND_URL) return alert("Wait for connection!");
+        const fd = new FormData();
+        fd.append('image', currentFile);
+        fd.append('format', 'jpeg'); // JPG conversion button
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/convert`, { method: 'POST', body: fd });
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('convertedImg').src = data.image;
+                document.getElementById('convertedImg').style.display = 'block';
+            }
+        } catch(e) { alert("Panel error!"); }
+    }
+
+    initBackend();
+</script>
