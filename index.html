@@ -1,0 +1,83 @@
+// Is script ko apne index.html ke last mein replace kar dena (Baaki HTML same rahega)
+<script>
+    let BACKEND_URL = "";
+
+    // --- AUTO SYNC LOGIC ---
+    async function initBackend() {
+        const badge = document.querySelector('.developer-badge');
+        try {
+            // Panel dwara banayi gayi file se link uthao
+            const response = await fetch(`https://raw.githubusercontent.com/meonfire07-source/amiit-compressor/main/backend-config.json?t=${Date.now()}`);
+            const data = await response.json();
+            BACKEND_URL = data.url;
+            badge.innerText = "⚡ Panel Connected: Online";
+            badge.style.background = "linear-gradient(135deg, #06d6a0, #05a87d)";
+        } catch (err) {
+            badge.innerText = "⚠️ Panel Offline - Restarting...";
+            // Har 10 second mein try karo jab tak connect na ho
+            setTimeout(initBackend, 10000);
+        }
+    }
+
+    // ========== UPDATED CONVERT FUNCTION ==========
+    async function convertImage() {
+        if (!currentFile || !BACKEND_URL) {
+            alert(BACKEND_URL ? 'Please upload an image!' : 'Connecting to Panel... Please wait 30s');
+            return;
+        }
+        startProcessing('conversion');
+        const formData = new FormData();
+        formData.append('image', currentFile);
+        formData.append('format', currentFormat);
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/convert`, { method: 'POST', body: formData });
+            const data = await res.json();
+            stopProcessing();
+            if (data.image) {
+                document.getElementById('convertedImg').src = data.image;
+                document.getElementById('convertedImg').style.display = 'block';
+                document.getElementById('convertedStats').innerHTML = `Size: ${(data.size/1024).toFixed(1)}KB<br>Format: ${currentFormat.toUpperCase()}`;
+                const link = document.createElement('a');
+                link.href = data.image;
+                link.download = `converted.${currentFormat}`;
+                link.click();
+                showSuccess(`✅ Converted to ${currentFormat.toUpperCase()}`);
+            }
+        } catch (err) { stopProcessing(); alert('Connection Lost! Restarting panel...'); initBackend(); }
+    }
+
+    // ========== UPDATED COMPRESS FUNCTION ==========
+    async function compressImage() {
+        if (!currentFile || !BACKEND_URL) return alert('Check connection/file');
+        const targetSize = document.getElementById('targetSize').value;
+        startProcessing('compression', targetSize);
+        
+        const formData = new FormData();
+        formData.append('image', currentFile);
+        formData.append('targetSize', targetSize);
+        formData.append('sizeUnit', document.getElementById('sizeUnit').value);
+        formData.append('width', document.getElementById('width').value);
+        formData.append('height', document.getElementById('height').value);
+        formData.append('dpi', document.getElementById('dpiSlider').value);
+        formData.append('format', currentFormat);
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/compress`, { method: 'POST', body: formData });
+            const data = await res.json();
+            stopProcessing();
+            if (data.success) {
+                const img = document.getElementById('compressedImg');
+                img.src = data.image; img.style.display = 'block';
+                document.getElementById('compressedStats').innerHTML = `Size: ${data.compressed.sizeKB}KB<br>Quality: ${data.compressed.quality}% | ${data.compressed.dpi} DPI`;
+                const link = document.createElement('a');
+                link.href = data.image;
+                link.download = `compressed.${currentFormat}`;
+                link.click();
+                showSuccess(data.message);
+            }
+        } catch (err) { stopProcessing(); initBackend(); }
+    }
+
+    initBackend(); // Start connection on load
+</script>
