@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelForge | Beast Compressor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen p-5">
+    <div class="max-w-2xl mx-auto space-y-6">
+        <header class="text-center">
+            <h1 class="text-4xl font-bold">PIXELFORGE</h1>
+            <p id="status" class="text-yellow-500 mt-2">Connecting to Beast Panel...</p>
+        </header>
+
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+            <input type="file" id="imgInp" class="w-full mb-4">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <input type="number" id="tSize" placeholder="Target Size" class="bg-slate-700 p-2 rounded">
+                <select id="unit" class="bg-slate-700 p-2 rounded"><option>KB</option><option>MB</option></select>
+                <input type="number" id="w" placeholder="Width" class="bg-slate-700 p-2 rounded">
+                <input type="number" id="h" placeholder="Height" class="bg-slate-700 p-2 rounded">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="send('compress')" class="flex-1 bg-blue-600 p-3 rounded font-bold">Auto Compress (WebP)</button>
+                <button onclick="send('convert')" class="flex-1 bg-slate-600 p-3 rounded font-bold">Convert to JPG</button>
+            </div>
+        </div>
+
+        <div id="res" class="hidden text-center bg-slate-800 p-4 rounded-xl">
+            <img id="prev" class="max-h-64 mx-auto mb-4">
+            <a id="dl" class="bg-green-600 px-6 py-2 rounded font-bold">Download</a>
+        </div>
+    </div>
+
+    <script>
+        let BACKEND = "";
+        async function sync() {
+            try {
+                const r = await fetch(`https://raw.githubusercontent.com/meonfire07-source/amiit-compressor/main/backend-config.json?t=${Date.now()}`);
+                const d = await r.json(); BACKEND = d.url;
+                document.getElementById('status').innerText = "Beast Panel Online ✅";
+            } catch (e) { document.getElementById('status').innerText = "Offline - Restart Panel"; }
+        }
+        async function send(type) {
+            const file = document.getElementById('imgInp').files[0];
+            if(!file || !BACKEND) return alert("Select file & Wait for connection");
+            const fd = new FormData();
+            fd.append('image', file);
+            fd.append('targetSize', document.getElementById('tSize').value);
+            fd.append('sizeUnit', document.getElementById('unit').value);
+            fd.append('width', document.getElementById('w').value);
+            fd.append('height', document.getElementById('h').value);
+            
+            document.getElementById('status').innerText = "Processing...";
+            const r = await fetch(`${BACKEND}/${type}`, { method:'POST', body:fd });
+            const data = await r.json();
+            if(data.success) {
+                document.getElementById('res').classList.remove('hidden');
+                document.getElementById('prev').src = data.image;
+                document.getElementById('dl').href = data.image;
+                document.getElementById('dl').download = `compressed.${type === 'compress' ? 'webp' : 'jpg'}`;
+                document.getElementById('status').innerText = "Beast Panel Online ✅";
+            }
+        }
+        sync();
+    </script>
+</body>
+</html>
