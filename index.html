@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelForge | 13GB RAM Beast</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen p-4 md:p-10">
+    <div class="max-w-3xl mx-auto space-y-8">
+        <header class="text-center">
+            <h1 class="text-5xl font-black tracking-tighter text-blue-500">PIXELFORGE</h1>
+            <div id="status" class="mt-3 inline-block px-4 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400">
+                🟡 Initializing Beast Panel...
+            </div>
+        </header>
+
+        <div class="glass p-8 rounded-3xl space-y-6">
+            <input type="file" id="inp" class="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <input type="number" id="ts" placeholder="Size" class="bg-slate-900 p-3 rounded-xl border border-slate-800 outline-none focus:border-blue-500">
+                <select id="un" class="bg-slate-900 p-3 rounded-xl border border-slate-800"><option>KB</option><option>MB</option></select>
+                <input type="number" id="w" placeholder="Width" class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                <input type="number" id="h" placeholder="Height" class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-4">
+                <button onclick="run('compress')" class="flex-1 bg-blue-600 hover:bg-blue-700 p-4 rounded-2xl font-black shadow-lg shadow-blue-900/40 transition-all">⚡ AUTO COMPRESS (WebP)</button>
+                <button onclick="run('convert')" class="flex-1 bg-slate-800 hover:bg-slate-700 p-4 rounded-2xl font-black transition-all">📸 CONVERT TO JPG</button>
+            </div>
+        </div>
+
+        <div id="res" class="hidden glass p-6 rounded-3xl text-center">
+            <img id="pv" class="max-h-80 mx-auto rounded-xl shadow-2xl mb-6">
+            <a id="dl" class="inline-block bg-white text-black px-10 py-3 rounded-full font-black hover:bg-slate-200">DOWNLOAD</a>
+        </div>
+    </div>
+
+    <script>
+        let BACKEND = "";
+        async function sync() {
+            const st = document.getElementById('status');
+            try {
+                const r = await fetch(`https://raw.githubusercontent.com/meonfire07-source/amiit-compressor/main/backend-config.json?t=${Date.now()}`);
+                const d = await r.json(); 
+                BACKEND = d.url;
+                st.innerText = "Beast Panel Online ✅";
+                st.className = "mt-3 inline-block px-4 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/50";
+            } catch (e) { 
+                st.innerText = "Panel Offline - Please Restart";
+                st.className = "mt-3 inline-block px-4 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/50";
+            }
+        }
+        async function run(mode) {
+            const f = document.getElementById('inp').files[0];
+            if(!f || !BACKEND) return alert("File choose karo ya Panel connect hone do!");
+            
+            const st = document.getElementById('status');
+            st.innerText = "⏳ Processing on 13GB RAM...";
+            
+            const fd = new FormData();
+            fd.append('image', f);
+            fd.append('targetSize', document.getElementById('ts').value);
+            fd.append('sizeUnit', document.getElementById('un').value);
+            fd.append('width', document.getElementById('w').value);
+            fd.append('height', document.getElementById('h').value);
+
+            try {
+                const r = await fetch(`${BACKEND}/${mode}`, { method: 'POST', body: fd });
+                const d = await r.json();
+                if(d.success) {
+                    document.getElementById('res').classList.remove('hidden');
+                    document.getElementById('pv').src = d.image;
+                    document.getElementById('dl').href = d.image;
+                    document.getElementById('dl').download = `pixel-forge.${mode === 'compress' ? 'webp' : 'jpg'}`;
+                    st.innerText = "Beast Panel Online ✅";
+                }
+            } catch (e) { alert("Error: Panel connection lost!"); }
+        }
+        sync();
+    </script>
+</body>
+</html>
